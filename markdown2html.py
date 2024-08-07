@@ -1,119 +1,98 @@
 #!/usr/bin/python3
-""" Script that converts Markdown to HTML """
+''' Write a script markdown2html.py that takes an argument 2 strings:
+
+    First argument is the name of the Markdown file
+    Second argument is the output file name
+'''
 
 import sys
-import os
+import os.path
 import re
 import hashlib
 
-
-def convert_markdown(md_content):
-    """
-    Convert Markdown headings, lists, paragraphs, bold, emphasis,
-    and custom syntax to HTML.
-    """
-    html_content = []
-    in_ulist = False
-    in_olist = False
-    in_paragraph = False
-    paragraph_lines = []
-
-    def close_paragraph():
-        nonlocal paragraph_lines, in_paragraph
-        if paragraph_lines:
-            html_content.append('<p>')
-            for i, line in enumerate(paragraph_lines):
-                if i > 0:
-                    html_content.append('<br/>')
-                html_content.append(apply_text_styles(line))
-            html_content.append('</p>')
-            paragraph_lines = []
-            in_paragraph = False
-
-    def apply_text_styles(text):
-        """ Convert Markdown bold, emphasis, and custom syntax to HTML. """
-        text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
-        text = re.sub(r'__(.+?)__', r'<em>\1</em>', text)
-        text = re.sub(r'\[\[(.+?)\]\]', lambda m: hashlib.md5(
-            m.group(1).encode()).hexdigest(), text)
-        text = re.sub(r'\(\((.+?)\)\)', lambda m: re.sub(
-            r'[cC]', '', m.group(1)), text)
-        return text
-
-    for line in md_content.splitlines():
-        match_heading = re.match(r'(#{1,6}) (.+)', line)
-        if match_heading:
-            close_paragraph()
-            level = len(match_heading.group(1))
-            text = apply_text_styles(match_heading.group(2))
-            html_content.append(f'<h{level}>{text}</h{level}>')
-            if in_ulist:
-                html_content.append('</ul>')
-                in_ulist = False
-            if in_olist:
-                html_content.append('</ol>')
-                in_olist = False
-        elif line.startswith('- '):
-            close_paragraph()
-            if in_olist:
-                html_content.append('</ol>')
-                in_olist = False
-            if not in_ulist:
-                html_content.append('<ul>')
-                in_ulist = True
-            html_content.append(f'<li>{apply_text_styles(line[2:])}</li>')
-        elif line.startswith('* '):
-            close_paragraph()
-            if in_ulist:
-                html_content.append('</ul>')
-                in_ulist = False
-            if not in_olist:
-                html_content.append('<ol>')
-                in_olist = True
-            html_content.append(f'<li>{apply_text_styles(line[2:])}</li>')
-        else:
-            if in_ulist:
-                html_content.append('</ul>')
-                in_ulist = False
-            if in_olist:
-                html_content.append('</ol>')
-                in_olist = False
-            if line.strip():
-                paragraph_lines.append(line)
-                in_paragraph = True
-            else:
-                close_paragraph()
-
-    close_paragraph()
-    if in_ulist:
-        html_content.append('</ul>')
-    if in_olist:
-        html_content.append('</ol>')
-
-    return '\n'.join(html_content)
-
-
-def main():
+if __name__ == '__main__':
     if len(sys.argv) < 3:
-        sys.stderr.write("Usage: ./markdown2html.py README.md README.html\n")
+        print('Usage: ./markdown2html.py README.md README.html',
+              file=sys.stderr)
         exit(1)
 
-    md_file = sys.argv[1]
-    html_file = sys.argv[2]
-
-    if not os.path.exists(md_file):
-        sys.stderr.write(f"Missing {md_file}\n")
+    if not os.path.isfile(sys.argv[1]):
+        print('Missing {}'.format(sys.argv[1]), file=sys.stderr)
         exit(1)
 
-    with open(md_file, 'r') as md_filename:
-        md_content = md_filename.read()
-        html_content = convert_markdown(md_content)
+    with open(sys.argv[1]) as read:
+        with open(sys.argv[2], 'w') as html:
+            unordered_start, ordered_start, paragraph = False, False, False
+            # bold syntax
+            for line in read:
+                line = line.replace('**', '<b>', 1)
+                line = line.replace('**', '</b>', 1)
+                line = line.replace('__', '<em>', 1)
+                line = line.replace('__', '</em>', 1)
 
-    with open(html_file, 'w') as html_filename:
-        html_filename.write(html_content)
+                # md5
+                md5 = re.findall(r'\[\[.+?\]\]', line)
+                md5_inside = re.findall(r'\[\[(.+?)\]\]', line)
+                if md5:
+                    line = line.replace(md5[0], hashlib.md5(
+                        md5_inside[0].encode()).hexdigest())
 
-    exit(0)
+                # remove the letter C
+                remove_letter_c = re.findall(r'\(\(.+?\)\)', line)
+                remove_c_more = re.findall(r'\(\((.+?)\)\)', line)
+                if remove_letter_c:
+                    remove_c_more = ''.join(
+                        c for c in remove_c_more[0] if c not in 'Cc')
+                    line = line.replace(remove_letter_c[0], remove_c_more)
 
+                length = len(line)
+                headings = line.lstrip('#')
+                heading_num = length - len(headings)
+                unordered = line.lstrip('-')
+                unordered_num = length - len(unordered)
+                ordered = line.lstrip('*')
+                ordered_num = length - len(ordered)
+                # headings, lists
+                if 1 <= heading_num <= 6:
+                    line = '<h{}>'.format(
+                        heading_num) + headings.strip() + '</h{}>\n'.format(
+                        heading_num)
 
-if __name__ == "__main__":
-    main()
+                if unordered_num:
+                    if not unordered_start:
+                        html.write('<ul>\n')
+                        unordered_start = True
+                    line = '<li>' + unordered.strip() + '</li>\n'
+                if unordered_start and not unordered_num:
+                    html.write('</ul>\n')
+                    unordered_start = False
+
+                if ordered_num:
+                    if not ordered_start:
+                        html.write('<ol>\n')
+                        ordered_start = True
+                    line = '<li>' + ordered.strip() + '</li>\n'
+                if ordered_start and not ordered_num:
+                    html.write('</ol>\n')
+                    ordered_start = False
+
+                if not (heading_num or unordered_start or ordered_start):
+                    if not paragraph and length > 1:
+                        html.write('<p>\n')
+                        paragraph = True
+                    elif length > 1:
+                        html.write('<br/>\n')
+                    elif paragraph:
+                        html.write('</p>\n')
+                        paragraph = False
+
+                if length > 1:
+                    html.write(line)
+
+            if unordered_start:
+                html.write('</ul>\n')
+            if ordered_start:
+                html.write('</ol>\n')
+            if paragraph:
+                html.write('</p>\n')
+    exit (0)
