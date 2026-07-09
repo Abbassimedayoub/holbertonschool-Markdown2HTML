@@ -1,50 +1,29 @@
-# holbertonschool-Markdown2HTML
 # Markdown2HTML
 
-**Markdown2HTML** is a simple tool for converting Markdown files into HTML. This tool is designed to make it easy to transform Markdown content into well-formatted HTML pages.
+## Overview
 
-## Features
+A **Python** script that converts a Markdown file into HTML, using the `markdown` library. Holberton School exercise on argument handling, file I/O and text conversion.
 
-- Converts Markdown to HTML with customizable options
-- Supports standard Markdown syntax
-- Easy to integrate into build processes or workflows
-- Command-line interface for easy use
+## Requirements
 
-## Installation
+- Python 3
+- The `markdown` package: `pip install markdown`
 
-To install Markdown2HTML, you need to have Node.js and npm installed. You can then install the tool globally using npm:
-
-```bash
-npm install -g markdown2html 
-```
 ## Usage
-To convert a Markdown file to HTML, use the following command
-```bash
-markdown2html input.md -o output.html
-```
-## Options
- - o, --output Specify the output file (e.g., output.html)
- - t, --template Use a custom HTML template
- - h, --help Display help information
-## Examples
-Convert a Markdown file to HTML:
-```bash
-markdown2html README.md -o README.html
-```
-Convert a Markdown file with a custom template:
-```bash
-markdown2html input.md -t custom-template.html -o output.html
-```
-## API
-For programmatic use, you can require markdown2html in your Node.js scripts:
-```javascript
-const markdown2html = require('markdown2html');
 
-markdown2html.renderFile('input.md', 'output.html', (err) => {
-  if (err) {
-    console.error('Error converting Markdown to HTML:', err);
-  } else {
-    console.log('Markdown converted to HTML successfully!');
-  }
-});
+```bash
+./markdown2html.py input.md output.html
 ```
+
+The script validates its arguments (usage message if arguments are missing, error if the input file does not exist), converts `input.md`, and writes the resulting HTML to `output.html`.
+
+## Skills Demonstrated
+
+Command-line argument handling, file reading/writing, use of a third-party library, and proper exit codes / error messages on stderr.
+
+## Author
+
+**Mohamed Ayoub Abbassi** — Holberton School Paris
+
+- GitHub: [@Abbassimedayoub](https://github.com/Abbassimedayoub)
+- LinkedIn: [mohamed-ayoub-abbassi](https://www.linkedin.com/in/mohamed-ayoub-abbassi)
